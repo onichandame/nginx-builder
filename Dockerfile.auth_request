@@ -1,0 +1,17 @@
+ARG osVersion=bookworm
+
+FROM debian:${osVersion} AS builder
+RUN apt update -y
+RUN apt install -y gcc make libpcre3-dev zlib1g-dev libssl-dev
+COPY nginx /builder
+WORKDIR /builder
+RUN ./auto/configure --with-http_auth_request_module
+RUN make
+RUN make install
+
+FROM debian:${osVersion}-slim
+RUN apt update -y
+RUN apt install -y libpcre3 zlib1g libssl3
+RUN apt clean -y
+COPY --from=builder /usr/local/nginx /usr/local/nginx
+ENTRYPOINT [ "/usr/local/nginx/sbin/nginx" ]
